@@ -4,6 +4,8 @@
 
 > PFS archives are proprietary archives used by the [Artemis](https://www.ies-net.com/) galgame engine.
 
+Using [pfs-rs](https://github.com/sakarie9/pfs-rs) Rust library to unpack PFS archives on Android devices.
+
 ## Features
 
 - Unpack PFS archives by selecting files in App
