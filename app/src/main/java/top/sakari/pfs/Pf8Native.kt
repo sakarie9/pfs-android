@@ -102,7 +102,7 @@ object Pf8Native {
      *
      * @param archivePath 归档文件路径
      * @param outputDir 输出目录路径
-     * @param callback 进度回调
+     * @param callback 进度回调（ArchiveProgressCallback）
      * @param tokenHandle 取消令牌句柄（0表示不使用）
      * @return 成功返回 true，失败返回 false
      * @throws RuntimeException 如果操作失败
@@ -110,52 +110,82 @@ object Pf8Native {
     external fun extractArchiveWithCallback(
         archivePath: String,
         outputDir: String,
-        callback: ExtractionProgressCallback,
+        callback: ArchiveProgressCallback,
+        tokenHandle: Long = 0
+    ): Boolean
+
+    /**
+     * 带回调的创建归档函数
+     *
+     * @param inputDir 输入目录路径
+     * @param outputPath 输出归档文件路径
+     * @param callback 进度回调
+     * @param tokenHandle 取消令牌句柄（0表示不使用）
+     * @return 成功返回 true，失败返回 false
+     * @throws RuntimeException 如果操作失败
+     */
+    external fun createArchiveWithCallback(
+        inputDir: String,
+        outputPath: String,
+        callback: ArchiveProgressCallback,
         tokenHandle: Long = 0
     ): Boolean
 }
 
 /**
- * 解压进度回调接口
+ * 归档操作进度回调接口（新版本）
+ * 支持打包和解压操作的统一回调接口
  */
-interface ExtractionProgressCallback {
+interface ArchiveProgressCallback {
+    /**
+     * 操作开始回调
+     *
+     * @param operationType 操作类型 "Pack" 或 "Unpack"
+     */
+    fun onStarted(operationType: String)
+
+    /**
+     * 条目开始处理回调
+     *
+     * @param entryName 条目名称（文件路径）
+     */
+    fun onEntryStarted(entryName: String)
+
     /**
      * 进度更新回调
      *
      * @param currentFile 当前处理的文件名
-     * @param currentFileIndex 当前文件索引（从0开始）
-     * @param totalFiles 总文件数
-     * @param currentFileBytes 当前文件已处理字节数
-     * @param currentFileTotal 当前文件总字节数
-     * @param totalBytesProcessed 总已处理字节数
-     * @param totalBytes 总字节数
+     * @param processedBytes 已处理的字节数
+     * @param totalBytes 总字节数（打包时可能为0）
+     * @param processedFiles 已处理的文件数
+     * @param totalFiles 总文件数（打包时可能为0）
      */
     fun onProgress(
         currentFile: String,
-        currentFileIndex: Int,
-        totalFiles: Int,
-        currentFileBytes: Long,
-        currentFileTotal: Long,
-        totalBytesProcessed: Long,
-        totalBytes: Long
+        processedBytes: Long,
+        totalBytes: Long,
+        processedFiles: Int,
+        totalFiles: Int
     )
 
     /**
-     * 文件开始解压回调
+     * 条目处理完成回调
      *
-     * @param path 文件路径
-     * @param fileIndex 文件索引
-     * @param totalFiles 总文件数
+     * @param entryName 条目名称（文件路径）
      */
-    fun onFileStart(path: String, fileIndex: Int, totalFiles: Int)
+    fun onEntryFinished(entryName: String)
 
     /**
-     * 文件解压完成回调
+     * 警告回调
      *
-     * @param path 文件路径
-     * @param fileIndex 文件索引
+     * @param message 警告消息
      */
-    fun onFileComplete(path: String, fileIndex: Int)
+    fun onWarning(message: String)
+
+    /**
+     * 操作完成回调
+     */
+    fun onFinished()
 }
 
 /**
@@ -182,4 +212,25 @@ class CancellationToken {
     fun close() {
         Pf8Native.freeCancellationToken(handle)
     }
+}
+
+/**
+ * 简单的 ArchiveProgressCallback 实现基类
+ * 提供所有方法的空实现，子类只需重写感兴趣的方法
+ */
+open class SimpleArchiveProgressCallback : ArchiveProgressCallback {
+    override fun onStarted(operationType: String) {}
+    override fun onEntryStarted(entryName: String) {}
+    override fun onProgress(
+        currentFile: String,
+        processedBytes: Long,
+        totalBytes: Long,
+        processedFiles: Int,
+        totalFiles: Int
+    ) {
+    }
+
+    override fun onEntryFinished(entryName: String) {}
+    override fun onWarning(message: String) {}
+    override fun onFinished() {}
 }

@@ -18,6 +18,7 @@ target/
 .kotlin/
 rust/target
 rust/target/
+rust/pf8
 old/
 app/src/main/jniLibs/
 app/release/

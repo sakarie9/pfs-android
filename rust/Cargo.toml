@@ -1,11 +1,11 @@
 [package]
 name = "pf8-android"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 
 [dependencies]
 # pf8 = { path = "../../pfs_rs/pf8" }
-pf8 = "0.1.3"
+pf8 = "0.1.4"
 jni = "0.21.1"
 
 [lib]

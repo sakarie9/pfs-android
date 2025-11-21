@@ -95,18 +95,24 @@ class PfsExtractionService : Service() {
             // 创建取消令牌
             cancellationToken = CancellationToken()
 
-            // 创建进度回调
-            val callback = object : ExtractionProgressCallback {
+            // 创建进度回调（使用新的 ArchiveProgressCallback 接口）
+            val callback = object : ArchiveProgressCallback {
                 private var lastUpdateTime = 0L
+
+                override fun onStarted(operationType: String) {
+                    android.util.Log.d(TAG, "开始操作: $operationType")
+                }
+
+                override fun onEntryStarted(entryName: String) {
+                    // 条目开始时的处理
+                }
 
                 override fun onProgress(
                     currentFile: String,
-                    currentFileIndex: Int,
-                    totalFiles: Int,
-                    currentFileBytes: Long,
-                    currentFileTotal: Long,
-                    totalBytesProcessed: Long,
-                    totalBytes: Long
+                    processedBytes: Long,
+                    totalBytes: Long,
+                    processedFiles: Int,
+                    totalFiles: Int
                 ) {
                     val now = System.currentTimeMillis()
                     // 限制通知更新频率（每1000ms更新一次）
@@ -114,12 +120,12 @@ class PfsExtractionService : Service() {
                     lastUpdateTime = now
 
                     val progress = if (totalBytes > 0) {
-                        (totalBytesProcessed * 100.0 / totalBytes).toInt()
+                        (processedBytes * 100.0 / totalBytes).toInt()
                     } else 0
 
                     val fileName = currentFile.substringAfterLast('/')
                     val sizeText =
-                        "${formatBytes(totalBytesProcessed)} / ${formatBytes(totalBytes)}"
+                        "${formatBytes(processedBytes)} / ${formatBytes(totalBytes)}"
 
                     // 更新通知
                     val notification = createProgressNotification(
@@ -130,15 +136,19 @@ class PfsExtractionService : Service() {
                     )
                     notificationManager.notify(NOTIFICATION_ID, notification)
 
-//                    android.util.Log.d(TAG, "进度: $progress% - $fileName ($currentFileIndex/$totalFiles)")
+//                    android.util.Log.d(TAG, "进度: $progress% - $fileName ($processedFiles/$totalFiles)")
                 }
 
-                override fun onFileStart(path: String, fileIndex: Int, totalFiles: Int) {
-//                    android.util.Log.d(TAG, "开始解压 ${fileIndex + 1}/$totalFiles: $path")
+                override fun onEntryFinished(entryName: String) {
+                    android.util.Log.d(TAG, "完成解压: $entryName")
                 }
 
-                override fun onFileComplete(path: String, fileIndex: Int) {
-                    android.util.Log.d(TAG, "完成解压: $path")
+                override fun onWarning(message: String) {
+                    android.util.Log.w(TAG, "警告: $message")
+                }
+
+                override fun onFinished() {
+                    android.util.Log.d(TAG, "解压完成")
                 }
             }
 
